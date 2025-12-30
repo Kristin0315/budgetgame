@@ -729,6 +729,98 @@
             box-shadow: 0 0 15px rgba(131,56,236,0.3);
         }
 
+        .budget-category {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid var(--neon-cyan);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(0,245,255,0.2);
+        }
+
+        .budget-category:hover {
+            background: rgba(0,245,255,0.05);
+            transform: translateX(5px);
+            box-shadow: 0 0 25px rgba(0,245,255,0.4);
+        }
+
+        .budget-category.overspent {
+            border-color: var(--neon-red);
+            background: rgba(255,0,84,0.1);
+            box-shadow: 0 0 20px rgba(255,0,84,0.4);
+        }
+
+        .budget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .category-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .budget-amounts {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .spent-amount {
+            color: var(--neon-red);
+        }
+
+        .remaining-amount {
+            color: var(--neon-cyan);
+            font-weight: 700;
+        }
+
+        .remaining-amount.overspent {
+            color: var(--neon-red);
+            animation: warningPulse 1s infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { text-shadow: 0 0 10px var(--neon-red); }
+            50% { text-shadow: 0 0 30px var(--neon-red); }
+        }
+
+        .budget-bar {
+            background: rgba(0,0,0,0.8);
+            border: 2px solid var(--neon-cyan);
+            height: 25px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .budget-bar.overspent {
+            border-color: var(--neon-red);
+        }
+
+        .budget-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-cyan), #00d4ff);
+            transition: width 0.5s, background 0.3s;
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .budget-bar-fill.overspent {
+            background: linear-gradient(90deg, var(--neon-red), #ff4466);
+            box-shadow: 0 0 15px var(--neon-red);
+            animation: overspentFlash 1s infinite;
+        }
+
+        @keyframes overspentFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .history-month {
             background: rgba(0,0,0,0.7);
             border: 2px solid var(--neon-pink);
@@ -882,6 +974,13 @@
                 <button onclick="addTransaction()" style="width: 100%;">
                     ENTER SPENDING
                 </button>
+            </div>
+
+            <div class="panel" style="border-color: var(--neon-purple);">
+                <h2 style="color: var(--neon-purple); margin-bottom: 25px; font-size: 1.5rem; text-shadow: 0 0 20px var(--neon-purple);">
+                    BUDGET TRACKER
+                </h2>
+                <div id="budgetTracker"></div>
             </div>
         </div>
 
@@ -1116,6 +1215,7 @@
             document.getElementById('daysLeft').textContent = getDaysLeftInMonth();
             
             updateTransactionList();
+            updateBudgetTracker();
         }
 
         function updateBattleScreen() {
@@ -1357,6 +1457,41 @@
                     </div>
                 `;
                 list.appendChild(item);
+            });
+        }
+
+        function updateBudgetTracker() {
+            const tracker = document.getElementById('budgetTracker');
+            if (!tracker) return;
+            
+            tracker.innerHTML = '';
+
+            Object.entries(gameState.budgets).sort().forEach(([category, budget]) => {
+                const spent = gameState.currentSpending[category] || 0;
+                const remaining = budget - spent;
+                const percentage = Math.min((spent / budget) * 100, 100);
+                const isOverspent = spent > budget;
+
+                const item = document.createElement('div');
+                item.className = 'budget-category' + (isOverspent ? ' overspent' : '');
+                item.innerHTML = `
+                    <div class="budget-header">
+                        <div class="category-name">${category}</div>
+                        <div style="font-size: 0.9rem; color: var(--neon-yellow);">$${budget.toFixed(2)}</div>
+                    </div>
+                    <div class="budget-amounts">
+                        <div class="spent-amount">Spent: $${spent.toFixed(2)}</div>
+                        <div class="remaining-amount ${isOverspent ? 'overspent' : ''}">
+                            ${isOverspent ? 'OVER' : 'Remaining'}: $${Math.abs(remaining).toFixed(2)}
+                        </div>
+                    </div>
+                    <div class="budget-bar ${isOverspent ? 'overspent' : ''}">
+                        <div class="budget-bar-fill ${isOverspent ? 'overspent' : ''}" 
+                             style="width: ${percentage}%">
+                        </div>
+                    </div>
+                `;
+                tracker.appendChild(item);
             });
         }
 
